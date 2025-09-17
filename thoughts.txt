@@ -1,0 +1,20 @@
+Timestamps are unreliable and could come unordered.
+
+Provided Kafka and Zookeeper images do not work for ARM, using official Confluent images instead.
+
+To increase throughput, partition on device id
+
+TODO:
+- Environment variables
+- Extract worker code to be nice
+- REST API endpoints
+- Worker needs local cache with state and latest_seen
+- Postgres should use Timescale DB
+- Migrations to create hypertable
+- Can we get rid of kafka metadata in the table?
+- Explain connector stuff in config and docker compose, cleanout unused stuff
+
+
+Future steps
+- OTEL, logs, traces, metrics (especially throughput and response time percentiles)
+- Scale up Kafka partitions, it is hard to move data to a different partition

@@ -1,0 +1,133 @@
+services:
+  device-events-worker:
+    build: .
+    container_name: device-events-worker
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_BROKERS: kafka:29092
+    restart: unless-stopped
+
+  kafka-connect-init:
+    container_name: kafka-connect-init
+    image: curlimages/curl:latest
+    depends_on:
+      - kafka-connect
+    volumes:
+      - ./connector-config.json:/connector-config.json:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      '
+      echo "Waiting for Kafka Connect to be ready..." && 
+      while ! nc -z kafka-connect 8083; do
+        echo "Kafka Connect is unavailable - sleeping" && sleep 1;
+      done &&
+      sleep 10 &&
+      echo "Kafka Connect is up - registering connector" &&
+      curl -X POST -H "Content-Type: application/json" --data @/connector-config.json http://kafka-connect:8083/connectors
+      '
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.3
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.3
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT, PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+  
+  kafka-init-topics:
+    image: confluentinc/cp-kafka:7.4.3
+    container_name: kafka-init-topics
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      '
+      echo "Waiting for Kafka to be ready..." && 
+      while ! nc -z kafka 29092; do
+        echo "Kafka is unavailable - sleeping" && sleep 1;
+      done &&
+      echo "Kafka is up - creating topics" &&
+      kafka-topics --create \
+        --topic device-events \
+        --partitions 1 \
+        --replication-factor 1 \
+        --if-not-exists \
+        --bootstrap-server kafka:29092 &&
+      kafka-topics --create \
+        --topic device-events-cleaned \
+        --partitions 1 \
+        --replication-factor 1 \
+        --if-not-exists \
+        --bootstrap-server kafka:29092 &&
+      kafka-topics --list --bootstrap-server kafka:29092 
+      '
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "10015:8080"
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: kafkauser
+      POSTGRES_PASSWORD: kafkapass
+      POSTGRES_DB: kafkadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.3
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+      - postgres
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: "kafka-connect-group"
+      CONNECT_CONFIG_STORAGE_TOPIC: "connect-configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "connect-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "connect-status"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/etc/kafka-connect/jars"
+      CONNECT_JDBC_DRIVER_CLASS: "org.postgresql.Driver"
+      CONNECT_JDBC_URL: "jdbc:postgresql://postgres:5432/kafkadb?user=kafkauser&password=kafkapass"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+    volumes:
+      - ./connect-jars:/etc/kafka-connect/jars
+volumes:
+  pgdata:
