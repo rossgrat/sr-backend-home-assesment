@@ -1,4 +1,4 @@
-package worker
+package cleaner
 
 import (
 	"context"
@@ -25,8 +25,7 @@ type Field struct {
 	Type  string `json:"type"`
 }
 
-func RunWorker(ctx context.Context) {
-	// Kafka setup
+func RunCleaner(ctx context.Context) {
 	brokers := []string{"kafka:29092"}
 	groupID := "device-events-cleaner"
 	reader := kafka.NewReader(kafka.ReaderConfig{
@@ -71,7 +70,7 @@ func RunWorker(ctx context.Context) {
 			fmt.Println("Error marshaling record:", err)
 			continue
 		}
-		err = writer.WriteMessages(ctx, kafka.Message{Value: out})
+		err = writer.WriteMessages(ctx, kafka.Message{Key: []byte(payload["device_id"].(string)), Value: out})
 		if err != nil {
 			fmt.Println("Error writing cleaned message:", err)
 		} else {

@@ -11,10 +11,25 @@ TODO:
 - Worker needs local cache with state and latest_seen
 - Postgres should use Timescale DB
 - Migrations to create hypertable
+    - Need go-migrate
 - Can we get rid of kafka metadata in the table?
 - Explain connector stuff in config and docker compose, cleanout unused stuff
+- Turn off auto-commit for Kafka
+
 
 
 Future steps
 - OTEL, logs, traces, metrics (especially throughput and response time percentiles)
 - Scale up Kafka partitions, it is hard to move data to a different partition
+
+
+Cameras track if a single device enters or exits.
+
+State checking speeds
+- New compacted topic for events, local cache client
+- New compacted topic for events, redis cache
+
+
+Can update the local cache only if the publication succeeds
+
+Do we need sync.Map? No, because one consumer group per partiion

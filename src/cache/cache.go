@@ -2,6 +2,6 @@ package cache
 
 type StateCache struct {
 	DeviceID          string
-	State             string
+	LastEvent         string
 	LastTimestampSeen int
 }
