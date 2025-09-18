@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sr-backend-home-assessment/internal/db"
 	"time"
 
@@ -34,8 +35,16 @@ func New(cfg Config) *API {
 
 func (a *API) GetDeviceTimeline(w http.ResponseWriter, r *http.Request) {
 	deviceID := chi.URLParam(r, "device_id")
-	startStr := r.URL.Query().Get("start")
-	endStr := r.URL.Query().Get("end")
+	startStr, err := url.QueryUnescape(r.URL.Query().Get("start"))
+	if err != nil {
+		http.Error(w, "invalid start query param", http.StatusBadRequest)
+		return
+	}
+	endStr, err := url.QueryUnescape(r.URL.Query().Get("end"))
+	if err != nil {
+		http.Error(w, "invalid end query param", http.StatusBadRequest)
+		return
+	}
 
 	startTime, err := time.Parse(time.RFC3339, startStr)
 	if err != nil {
@@ -61,7 +70,7 @@ func (a *API) GetDeviceTimeline(w http.ResponseWriter, r *http.Request) {
 		resp.Events = append(resp.Events, DeviceEvent{
 			DeviceID:  event.DeviceID,
 			EventType: event.EventType,
-			Timestamp: time.Unix(event.Timestamp, 0).Format(time.RFC3339),
+			Timestamp: time.UnixMilli(event.Timestamp).Format(time.RFC3339),
 		})
 	}
 

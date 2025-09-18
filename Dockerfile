@@ -8,4 +8,5 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/worker /app/worker
 COPY internal/db/migrations /app/src/db/migrations
+COPY .env /app/.env
 CMD ["/app/worker"]

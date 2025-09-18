@@ -5,9 +5,6 @@ Provided Kafka and Zookeeper images do not work for ARM, using official Confluen
 To increase throughput, partition on device id
 
 TODO:
-- Environment variables and env file
-- Unit tests
-- Some kind of E2E test
 - Write readme explainer
     - Changes to original files
     - How to setup and run

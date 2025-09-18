@@ -1,4 +1,4 @@
-.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks e2e
 
 up:
 	docker compose up -d --build
@@ -31,6 +31,9 @@ test:
 
 test.concise:
 	go test -count=1 ./...
+
+e2e:
+	cd ./scripts/e2e && go run main.go
 
 mac-install:
 	brew update

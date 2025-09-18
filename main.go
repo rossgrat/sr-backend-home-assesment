@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -15,7 +16,32 @@ import (
 	"syscall"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spf13/viper"
 )
+
+type Config struct {
+	DBUser                                 string `mapstructure:"DB_USER"`
+	DBPassword                             string `mapstructure:"DB_PASSWORD"`
+	DBName                                 string `mapstructure:"DB_NAME"`
+	KafkaBroker                            string `mapstructure:"KAFKA_BROKER"`
+	KafkaDeviceEventsTopic                 string `mapstructure:"KAFKA_DEVICE_EVENTS_TOPIC"`
+	KafkaDeviceEventsCleanedTopic          string `mapstructure:"KAFKA_DEVICE_EVENTS_CLEANED_TOPIC"`
+	KafkaDeviceEventsCleanedCompactedTopic string `mapstructure:"KAFKA_DEVICE_EVENTS_CLEANED_COMPACTED_TOPIC"`
+	MigrationsPath                         string `mapstructure:"MIGRATIONS_PATH"`
+}
+
+func loadConfig() (Config, error) {
+	viper.SetConfigFile(".env")
+	if err := viper.ReadInConfig(); err != nil {
+		return Config{}, fmt.Errorf("error reading .env file: %w", err)
+	}
+
+	var config Config
+	if err := viper.Unmarshal(&config); err != nil {
+		return Config{}, fmt.Errorf("unable to decode into struct: %w", err)
+	}
+	return config, nil
+}
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
@@ -27,10 +53,15 @@ func main() {
 
 	slog.InfoContext(ctx, "Starting service...")
 
+	config, err := loadConfig()
+	if err != nil {
+		panic(fmt.Errorf("failed to load configuration: %w", err))
+	}
+
 	// Setup API and DB
 	db, err := db.Init(ctx, db.Config{
-		ConnString:     "postgres://kafkauser:kafkapass@postgres:5432/kafkadb?sslmode=disable",
-		MigrationsPath: "/app/src/db/migrations",
+		ConnString:     fmt.Sprintf("postgres://%s:%s@postgres:5432/%s?sslmode=disable", config.DBUser, config.DBPassword, config.DBName),
+		MigrationsPath: config.MigrationsPath,
 	})
 	if err != nil {
 		panic(err)
@@ -49,25 +80,25 @@ func main() {
 
 	// Setup event cleaner
 	cache := cache.New(cache.Config{
-		Brokers:       "kafka:29092",
-		ConsumerTopic: "device_events_cleaned_compacted",
+		Brokers:       config.KafkaBroker,
+		ConsumerTopic: config.KafkaDeviceEventsCleanedCompactedTopic,
 	})
 	cache.Hydrate(ctx)
 	slog.InfoContext(ctx, "Cache hydrated with initial data")
 	cache.Dump()
 	wCleaner := cleaner.New(cleaner.Config{
-		Brokers:         "kafka:29092",
+		Brokers:         config.KafkaBroker,
 		ConsumerGroupID: "cleaner-group",
-		ConsumerTopic:   "device-events",
-		PublisherTopic:  "device_events_cleaned",
+		ConsumerTopic:   config.KafkaDeviceEventsTopic,
+		PublisherTopic:  config.KafkaDeviceEventsCleanedTopic,
 		Cache:           cache,
 	})
 
 	wPacker := packer.New(packer.Config{
-		Brokers:         "kafka:29092",
+		Brokers:         config.KafkaBroker,
 		ConsumerGroupID: "packer-group",
-		ConsumerTopic:   "device_events_cleaned",
-		PublisherTopic:  "device_events_cleaned_compacted",
+		ConsumerTopic:   config.KafkaDeviceEventsCleanedTopic,
+		PublisherTopic:  config.KafkaDeviceEventsCleanedCompactedTopic,
 	})
 
 	// Run waitgroups for cleaner, mover, and REST API
