@@ -3,11 +3,16 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"sr-backend-home-assessment/internal/db"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+)
+
+var (
+	ErrInvalidTimestamp = fmt.Errorf("invalid timestamp")
 )
 
 type repository interface {
@@ -71,18 +76,10 @@ func (a *API) CreateDeviceTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbEvents := make([]db.DeviceEvent, 0, len(timeline.Events))
-	for _, event := range timeline.Events {
-		parsedTime, err := time.Parse(time.RFC3339, event.Timestamp)
-		if err != nil {
-			http.Error(w, "invalid event timestamp", http.StatusBadRequest)
-			return
-		}
-		dbEvents = append(dbEvents, db.DeviceEvent{
-			DeviceID:  event.DeviceID,
-			EventType: event.EventType,
-			Timestamp: parsedTime.UnixMilli(),
-		})
+	dbEvents, err := convertEventsToDB(timeline.Events)
+	if err != nil {
+		http.Error(w, "invalid data in request body", http.StatusBadRequest)
+		return
 	}
 
 	if err := a.DB.CreateTimeline(r.Context(), dbEvents); err != nil {
@@ -90,4 +87,21 @@ func (a *API) CreateDeviceTimeline(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func convertEventsToDB(events []DeviceEvent) ([]db.DeviceEvent, error) {
+	const fn = "convertEventsToDB"
+	dbEvents := make([]db.DeviceEvent, 0, len(events))
+	for _, event := range events {
+		parsedTime, err := time.Parse(time.RFC3339, event.Timestamp)
+		if err != nil {
+			return []db.DeviceEvent{}, fmt.Errorf("%s:%w:%w", fn, ErrInvalidTimestamp, err)
+		}
+		dbEvents = append(dbEvents, db.DeviceEvent{
+			DeviceID:  event.DeviceID,
+			EventType: event.EventType,
+			Timestamp: parsedTime.UnixMilli(),
+		})
+	}
+	return dbEvents, nil
 }

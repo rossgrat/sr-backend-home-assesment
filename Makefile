@@ -1,10 +1,9 @@
-.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install
 
 up:
 	docker compose up -d --build
 down:
 	docker compose down -v --remove-orphans
-
 up.main:
 	docker compose up -d --build main
 
@@ -26,3 +25,12 @@ data:
 
 mocks:
 	mockery
+
+mac-install:
+	brew update
+	brew upgrade
+	brew install go
+	brew install mockery
+	brew install docker
+	brew install docker --cask
+	brew install golangci-lint
