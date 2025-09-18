@@ -78,7 +78,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       
   postgres:
-    image: postgres:15
+    image: timescale/timescaledb:latest-pg15
     container_name: postgres
     environment:
       POSTGRES_USER: kafkauser

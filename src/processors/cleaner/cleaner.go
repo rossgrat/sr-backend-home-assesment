@@ -3,11 +3,18 @@ package cleaner
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"sr-backend-home-assessment/src/cache"
 	"sr-backend-home-assessment/src/worker"
 
 	"github.com/segmentio/kafka-go"
+)
+
+var (
+	ErrUnorderedEvent = errors.New("out of order event")
+	ErrDuplicateEvent = errors.New("duplicate event")
+	ErrInvalidEvent   = errors.New("invalid event")
 )
 
 type Config struct {
@@ -69,25 +76,14 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 		return
 	}
 
-	// Skip old timestamps
-	state, exists := c.cache.Get(cache.DeviceID(payload.DeviceID))
-	if exists {
-		if payload.Timestamp < state.LastTimestampSeen {
-			slog.InfoContext(ctx, "Stale event detected, skipping",
-				"device_id", payload.DeviceID,
-				"event_timestamp", payload.Timestamp,
-				"last_seen", state.LastTimestampSeen)
-			return
-		}
-		// Skip duplicate enter/exit events
-		if payload.EventType == worker.DeviceEnter || payload.EventType == worker.DeviceExit {
-			if payload.EventType == state.LastEvent {
-				slog.InfoContext(ctx, "Duplicate event detected, skipping",
-					"device_id", payload.DeviceID,
-					"event_type", payload.EventType)
-				return
-			}
-		}
+	if err := c.validateEvent(payload); err != nil {
+		slog.InfoContext(ctx, "Invalid event, skipping",
+			"error", err,
+			"device_id", payload.DeviceID,
+			"event_type", payload.EventType,
+			"timestamp", payload.Timestamp,
+		)
+		return
 	}
 
 	record := worker.StructuredConnectRecord{
@@ -110,4 +106,20 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 		LastTimestampSeen: payload.Timestamp,
 	})
 	slog.InfoContext(ctx, "Published cleaned message", "device_id", payload.DeviceID)
+}
+
+func (c *Cleaner) validateEvent(payload worker.DeviceEvent) error {
+	if payload.EventType != worker.DeviceEnter && payload.EventType != worker.DeviceExit {
+		return ErrInvalidEvent
+	}
+	state, exists := c.cache.Get(cache.DeviceID(payload.DeviceID))
+	if exists {
+		if payload.Timestamp < state.LastTimestampSeen {
+			return ErrUnorderedEvent
+		}
+		if payload.EventType == state.LastEvent {
+			return ErrDuplicateEvent
+		}
+	}
+	return nil
 }

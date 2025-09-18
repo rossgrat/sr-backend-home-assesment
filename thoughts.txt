@@ -5,20 +5,25 @@ Provided Kafka and Zookeeper images do not work for ARM, using official Confluen
 To increase throughput, partition on device id
 
 TODO:
-- Convert DB to timescale
-- Implement go-migrate to create events table and set as HyperTable
 - REST API endpoint to post event
 - REST API endpoint to get timeline
+- Environment variables and env file
+- Makefile for everything
+- Refactor everything as necessary
+    - Move worker schema to a better spot
+    - "Expect interfaces, return structs"
+    - Sentinel errors
+- Reorg
+    - Kafka-Connect stuff in same directory
+    - Provided stuff in a separate directory
 - Mockery for mocks
 - Unit tests
-- Environment variables and env file
+- Some kind of E2E test
 - Write readme explainer
     - Changes to original files
     - How to setup and run
     - Screenshot of Architecture
 - Change compaction interval to be more often (max.compaction.lag.ms)
-- Move worker schema to a better spot
-- "Expect interfaces, return structs"
 
 
 

@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"sr-backend-home-assessment/src/cache"
+	"sr-backend-home-assessment/src/db"
 	"sr-backend-home-assessment/src/processors/cleaner"
 	"sr-backend-home-assessment/src/processors/packer"
 	"sync"
@@ -22,10 +23,13 @@ func main() {
 
 	slog.InfoContext(ctx, "Starting service...")
 
-	// _, err := db.Init(ctx, "postgres://kafkauser:kafkapass@postgres:5432/kafkadb")
-	// if err != nil {
-	// 	panic(err)
-	// }
+	_, err := db.Init(ctx, &db.Config{
+		ConnString:     "postgres://kafkauser:kafkapass@postgres:5432/kafkadb?sslmode=disable",
+		MigrationsPath: "/app/src/db/migrations",
+	})
+	if err != nil {
+		panic(err)
+	}
 
 	cache := cache.New(&cache.Config{
 		Brokers:       "kafka:29092",
