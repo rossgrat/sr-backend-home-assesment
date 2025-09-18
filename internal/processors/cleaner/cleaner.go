@@ -9,7 +9,7 @@ import (
 	"sr-backend-home-assessment/internal/cache"
 	"sr-backend-home-assessment/internal/worker"
 
-	k "sr-backend-home-assessment/internal/kafka" // alias to avoid name conflict
+	k "sr-backend-home-assessment/internal/kafka"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -24,8 +24,8 @@ var (
 )
 
 type deviceCache interface {
-	Get(deviceID cache.DeviceID) (*cache.DeviceState, bool)
-	Set(deviceID cache.DeviceID, state *cache.DeviceState)
+	Get(string) (cache.DeviceState, bool)
+	Set(string, cache.DeviceState)
 }
 
 type Config struct {
@@ -110,7 +110,7 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) error {
 	}
 
 	// Set cache only after successful write
-	c.cache.Set(cache.DeviceID(payload.DeviceID), &cache.DeviceState{
+	c.cache.Set(payload.DeviceID, cache.DeviceState{
 		LastEvent:         payload.EventType,
 		LastTimestampSeen: payload.Timestamp,
 	})
@@ -122,7 +122,7 @@ func (c *Cleaner) validateEvent(payload k.DeviceEvent) error {
 	if payload.EventType != k.DeviceEnter && payload.EventType != k.DeviceExit {
 		return ErrInvalidEvent
 	}
-	state, exists := c.cache.Get(cache.DeviceID(payload.DeviceID))
+	state, exists := c.cache.Get(payload.DeviceID)
 	if exists {
 		if payload.Timestamp < state.LastTimestampSeen {
 			return ErrUnorderedEvent

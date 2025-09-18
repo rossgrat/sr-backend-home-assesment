@@ -1,4 +1,4 @@
-.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks
 
 up:
 	docker compose up -d --build
@@ -25,6 +25,12 @@ data:
 
 mocks:
 	mockery
+
+test:
+	go test -v -count=1 ./...
+
+test.concise:
+	go test -count=1 ./...
 
 mac-install:
 	brew update

@@ -38,27 +38,25 @@ func (_m *MockdeviceCache) EXPECT() *MockdeviceCache_Expecter {
 }
 
 // Get provides a mock function for the type MockdeviceCache
-func (_mock *MockdeviceCache) Get(deviceID cache.DeviceID) (*cache.DeviceState, bool) {
-	ret := _mock.Called(deviceID)
+func (_mock *MockdeviceCache) Get(s string) (cache.DeviceState, bool) {
+	ret := _mock.Called(s)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
 	}
 
-	var r0 *cache.DeviceState
+	var r0 cache.DeviceState
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(cache.DeviceID) (*cache.DeviceState, bool)); ok {
-		return returnFunc(deviceID)
+	if returnFunc, ok := ret.Get(0).(func(string) (cache.DeviceState, bool)); ok {
+		return returnFunc(s)
 	}
-	if returnFunc, ok := ret.Get(0).(func(cache.DeviceID) *cache.DeviceState); ok {
-		r0 = returnFunc(deviceID)
+	if returnFunc, ok := ret.Get(0).(func(string) cache.DeviceState); ok {
+		r0 = returnFunc(s)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*cache.DeviceState)
-		}
+		r0 = ret.Get(0).(cache.DeviceState)
 	}
-	if returnFunc, ok := ret.Get(1).(func(cache.DeviceID) bool); ok {
-		r1 = returnFunc(deviceID)
+	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
+		r1 = returnFunc(s)
 	} else {
 		r1 = ret.Get(1).(bool)
 	}
@@ -71,16 +69,16 @@ type MockdeviceCache_Get_Call struct {
 }
 
 // Get is a helper method to define mock.On call
-//   - deviceID cache.DeviceID
-func (_e *MockdeviceCache_Expecter) Get(deviceID interface{}) *MockdeviceCache_Get_Call {
-	return &MockdeviceCache_Get_Call{Call: _e.mock.On("Get", deviceID)}
+//   - s string
+func (_e *MockdeviceCache_Expecter) Get(s interface{}) *MockdeviceCache_Get_Call {
+	return &MockdeviceCache_Get_Call{Call: _e.mock.On("Get", s)}
 }
 
-func (_c *MockdeviceCache_Get_Call) Run(run func(deviceID cache.DeviceID)) *MockdeviceCache_Get_Call {
+func (_c *MockdeviceCache_Get_Call) Run(run func(s string)) *MockdeviceCache_Get_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cache.DeviceID
+		var arg0 string
 		if args[0] != nil {
-			arg0 = args[0].(cache.DeviceID)
+			arg0 = args[0].(string)
 		}
 		run(
 			arg0,
@@ -89,19 +87,19 @@ func (_c *MockdeviceCache_Get_Call) Run(run func(deviceID cache.DeviceID)) *Mock
 	return _c
 }
 
-func (_c *MockdeviceCache_Get_Call) Return(deviceState *cache.DeviceState, b bool) *MockdeviceCache_Get_Call {
+func (_c *MockdeviceCache_Get_Call) Return(deviceState cache.DeviceState, b bool) *MockdeviceCache_Get_Call {
 	_c.Call.Return(deviceState, b)
 	return _c
 }
 
-func (_c *MockdeviceCache_Get_Call) RunAndReturn(run func(deviceID cache.DeviceID) (*cache.DeviceState, bool)) *MockdeviceCache_Get_Call {
+func (_c *MockdeviceCache_Get_Call) RunAndReturn(run func(s string) (cache.DeviceState, bool)) *MockdeviceCache_Get_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Set provides a mock function for the type MockdeviceCache
-func (_mock *MockdeviceCache) Set(deviceID cache.DeviceID, state *cache.DeviceState) {
-	_mock.Called(deviceID, state)
+func (_mock *MockdeviceCache) Set(s string, deviceState cache.DeviceState) {
+	_mock.Called(s, deviceState)
 	return
 }
 
@@ -111,21 +109,21 @@ type MockdeviceCache_Set_Call struct {
 }
 
 // Set is a helper method to define mock.On call
-//   - deviceID cache.DeviceID
-//   - state *cache.DeviceState
-func (_e *MockdeviceCache_Expecter) Set(deviceID interface{}, state interface{}) *MockdeviceCache_Set_Call {
-	return &MockdeviceCache_Set_Call{Call: _e.mock.On("Set", deviceID, state)}
+//   - s string
+//   - deviceState cache.DeviceState
+func (_e *MockdeviceCache_Expecter) Set(s interface{}, deviceState interface{}) *MockdeviceCache_Set_Call {
+	return &MockdeviceCache_Set_Call{Call: _e.mock.On("Set", s, deviceState)}
 }
 
-func (_c *MockdeviceCache_Set_Call) Run(run func(deviceID cache.DeviceID, state *cache.DeviceState)) *MockdeviceCache_Set_Call {
+func (_c *MockdeviceCache_Set_Call) Run(run func(s string, deviceState cache.DeviceState)) *MockdeviceCache_Set_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 cache.DeviceID
+		var arg0 string
 		if args[0] != nil {
-			arg0 = args[0].(cache.DeviceID)
+			arg0 = args[0].(string)
 		}
-		var arg1 *cache.DeviceState
+		var arg1 cache.DeviceState
 		if args[1] != nil {
-			arg1 = args[1].(*cache.DeviceState)
+			arg1 = args[1].(cache.DeviceState)
 		}
 		run(
 			arg0,
@@ -140,7 +138,7 @@ func (_c *MockdeviceCache_Set_Call) Return() *MockdeviceCache_Set_Call {
 	return _c
 }
 
-func (_c *MockdeviceCache_Set_Call) RunAndReturn(run func(deviceID cache.DeviceID, state *cache.DeviceState)) *MockdeviceCache_Set_Call {
+func (_c *MockdeviceCache_Set_Call) RunAndReturn(run func(s string, deviceState cache.DeviceState)) *MockdeviceCache_Set_Call {
 	_c.Run(run)
 	return _c
 }

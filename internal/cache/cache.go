@@ -19,8 +19,6 @@ var (
 	ErrParseMessage      = errors.New("error parsing JSON")
 )
 
-type DeviceID string
-
 type DeviceState struct {
 	LastEvent         string
 	LastTimestampSeen int64
@@ -33,13 +31,13 @@ type Config struct {
 
 type StateCache struct {
 	brokers string
-	store   map[DeviceID]*DeviceState
+	store   map[string]DeviceState
 	reader  k.Reader
 }
 
 func New(cfg Config) *StateCache {
 	cache := &StateCache{
-		store: make(map[DeviceID]*DeviceState),
+		store: make(map[string]DeviceState),
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers:     []string{cfg.Brokers},
 			Topic:       cfg.ConsumerTopic,
@@ -52,16 +50,16 @@ func New(cfg Config) *StateCache {
 	return cache
 }
 
-func (c *StateCache) Get(deviceID DeviceID) (*DeviceState, bool) {
+func (c *StateCache) Get(deviceID string) (DeviceState, bool) {
 	state, exists := c.store[deviceID]
 	return state, exists
 }
 
-func (c *StateCache) Set(deviceID DeviceID, state *DeviceState) {
+func (c *StateCache) Set(deviceID string, state DeviceState) {
 	c.store[deviceID] = state
 }
 
-func (c *StateCache) Delete(deviceID DeviceID) {
+func (c *StateCache) Delete(deviceID string) {
 	delete(c.store, deviceID)
 }
 
@@ -126,9 +124,9 @@ func (c *StateCache) ReadMessage(ctx context.Context) (bool, error) {
 	if err != nil {
 		cancel()
 		if errors.Is(err, context.DeadlineExceeded) {
-			slog.InfoContext(ctx, "Cache hydration complete - Deadline exceeded")
+			slog.InfoContext(ctx, "Cache hydration complete - No messages in cache")
 
-			return true, nil // No more messages to read
+			return true, nil
 		}
 		return false, fmt.Errorf("%s:%w:%w", fn, ErrReadMessage, err)
 	}
@@ -139,16 +137,16 @@ func (c *StateCache) ReadMessage(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("%s:%w:%w", fn, ErrParseMessage, err)
 	}
 
-	deviceState := &DeviceState{
+	deviceState := DeviceState{
 		LastEvent:         record.Payload.EventType,
 		LastTimestampSeen: record.Payload.Timestamp,
 	}
-	c.Set(DeviceID(record.Payload.DeviceID), deviceState)
+	c.Set(record.Payload.DeviceID, deviceState)
 
 	lag := c.reader.Lag()
 	if lag == 0 {
 		slog.InfoContext(ctx, "Cache hydration complete - Lag is zero")
-		return true, nil // No more messages to read
+		return true, nil
 	}
 	return false, nil
 }
