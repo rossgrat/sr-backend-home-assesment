@@ -3,7 +3,7 @@ package packer
 import (
 	"context"
 	"log/slog"
-	"sr-backend-home-assessment/src/worker"
+	"sr-backend-home-assessment/internal/worker"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -21,7 +21,7 @@ type Packer struct {
 	writer *kafka.Writer
 }
 
-func New(cfg *Config) *Packer {
+func New(cfg Config) *Packer {
 	packer := &Packer{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{cfg.Brokers},

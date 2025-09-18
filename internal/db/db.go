@@ -4,19 +4,12 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
-
-type DeviceEvent struct {
-	DeviceID  string `json:"device_id"`
-	EventType string `json:"event_type"`
-	Timestamp int    `json:"timestamp"`
-}
 
 type Config struct {
 	ConnString     string
@@ -45,7 +38,7 @@ func (db *DB) Migrate(ctx context.Context) error {
 	return nil
 }
 
-func Init(ctx context.Context, cfg *Config) (*DB, error) {
+func Init(ctx context.Context, cfg Config) (*DB, error) {
 	pool, err := pgxpool.Connect(ctx, cfg.ConnString)
 	if err != nil {
 		return nil, err
@@ -64,20 +57,4 @@ func Init(ctx context.Context, cfg *Config) (*DB, error) {
 
 func (db *DB) Close() {
 	db.pool.Close()
-}
-
-func (db *DB) LoadLatestEventForDevice(ctx context.Context, deviceID string) (*DeviceEvent, error) {
-	var e DeviceEvent
-	err := pgxscan.Get(ctx, db.pool, &e, `
-		SELECT 
-			device_id, 
-			event_type, 
-			timestamp 
-		FROM "device_events_cleaned"
-		WHERE device_id = $1 
-		ORDER BY timestamp DESC LIMIT 1`, deviceID)
-	if err != nil {
-		return nil, err
-	}
-	return &e, nil
 }

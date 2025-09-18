@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"sr-backend-home-assessment/src/cache"
-	"sr-backend-home-assessment/src/worker"
+	"sr-backend-home-assessment/internal/cache"
+	"sr-backend-home-assessment/internal/worker"
+
+	k "sr-backend-home-assessment/internal/kafka" // alias to avoid name conflict
 
 	"github.com/segmentio/kafka-go"
 )
@@ -32,7 +34,7 @@ type Cleaner struct {
 	cache  cache.Cache
 }
 
-func New(cfg *Config) *Cleaner {
+func New(cfg Config) *Cleaner {
 	cleaner := &Cleaner{
 		reader: kafka.NewReader(kafka.ReaderConfig{
 			Brokers: []string{cfg.Brokers},
@@ -70,7 +72,7 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 		slog.ErrorContext(ctx, "Error reading message", "error", err)
 		return
 	}
-	var payload worker.DeviceEvent
+	var payload k.DeviceEvent
 	if err := json.Unmarshal(m.Value, &payload); err != nil {
 		slog.ErrorContext(ctx, "Error parsing JSON", "error", err)
 		return
@@ -86,8 +88,8 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 		return
 	}
 
-	record := worker.StructuredConnectRecord{
-		Schema:  worker.StructuredSchema,
+	record := k.StructuredConnectRecord{
+		Schema:  k.StructuredSchema,
 		Payload: payload,
 	}
 	out, err := json.Marshal(record)
@@ -108,8 +110,8 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 	slog.InfoContext(ctx, "Published cleaned message", "device_id", payload.DeviceID)
 }
 
-func (c *Cleaner) validateEvent(payload worker.DeviceEvent) error {
-	if payload.EventType != worker.DeviceEnter && payload.EventType != worker.DeviceExit {
+func (c *Cleaner) validateEvent(payload k.DeviceEvent) error {
+	if payload.EventType != k.DeviceEnter && payload.EventType != k.DeviceExit {
 		return ErrInvalidEvent
 	}
 	state, exists := c.cache.Get(cache.DeviceID(payload.DeviceID))

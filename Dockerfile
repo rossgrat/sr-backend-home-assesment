@@ -7,5 +7,5 @@ RUN go mod tidy && go build -o worker main.go
 FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/worker /app/worker
-COPY src/db/migrations /app/src/db/migrations
+COPY internal/db/migrations /app/src/db/migrations
 CMD ["/app/worker"]

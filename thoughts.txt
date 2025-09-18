@@ -5,12 +5,9 @@ Provided Kafka and Zookeeper images do not work for ARM, using official Confluen
 To increase throughput, partition on device id
 
 TODO:
-- REST API endpoint to post event
-- REST API endpoint to get timeline
 - Environment variables and env file
 - Makefile for everything
 - Refactor everything as necessary
-    - Move worker schema to a better spot
     - "Expect interfaces, return structs"
     - Sentinel errors
 - Reorg
@@ -23,7 +20,6 @@ TODO:
     - Changes to original files
     - How to setup and run
     - Screenshot of Architecture
-- Change compaction interval to be more often (max.compaction.lag.ms)
 
 
 

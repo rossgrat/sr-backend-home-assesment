@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"sr-backend-home-assessment/src/worker"
 	"time"
+
+	k "sr-backend-home-assessment/internal/kafka"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -38,7 +39,7 @@ type StateCache struct {
 	reader  *kafka.Reader
 }
 
-func New(cfg *Config) *StateCache {
+func New(cfg Config) *StateCache {
 	cache := &StateCache{
 		store: make(map[DeviceID]*DeviceState),
 		reader: kafka.NewReader(kafka.ReaderConfig{
@@ -72,7 +73,6 @@ func (c *StateCache) Dump() {
 	}
 }
 
-// waitForBroker repeatedly attempts to connect to the broker until reachable or maxWait is exceeded
 func (c *StateCache) waitForBroker(ctx context.Context, maxWait time.Duration, interval time.Duration) error {
 	deadline := time.Now().Add(maxWait)
 	for time.Now().Before(deadline) {
@@ -82,7 +82,7 @@ func (c *StateCache) waitForBroker(ctx context.Context, maxWait time.Duration, i
 		if err == nil {
 			conn.Close()
 			slog.InfoContext(ctx, "Broker is ready", "broker", c.brokers)
-			return nil // Broker is reachable
+			return nil
 		}
 		slog.InfoContext(ctx, "Broker not ready", "broker", c.brokers, "error", err)
 		time.Sleep(interval)
@@ -120,7 +120,7 @@ func (c *StateCache) Hydrate(ctx context.Context) {
 				return
 			}
 
-			var record worker.StructuredConnectRecord
+			var record k.StructuredConnectRecord
 			if err := json.Unmarshal(m.Value, &record); err != nil {
 				slog.ErrorContext(ctx, "Error parsing JSON", "error", err)
 				continue
