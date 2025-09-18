@@ -1,4 +1,5 @@
 services:
+# The main applications service. Contains the Cleaner, the Packer, and the REST API.
   main:
     build: .
     container_name: main
@@ -32,7 +33,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
-  
+
+# A one-shot container to create the necessary Kafka topics  
   kafka-init-topics:
     image: confluentinc/cp-kafka:7.4.3
     container_name: kafka-init-topics
@@ -67,7 +69,7 @@ services:
         --bootstrap-server kafka:29092 &&
       kafka-topics --list --bootstrap-server kafka:29092 
       '
-
+# A UI for viewing messages on Kafka topics
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -79,6 +81,7 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       
+# The Postgres database with TimescaleDB extension, used by the REST API
   postgres:
     image: timescale/timescaledb:latest-pg17
     container_name: postgres
@@ -90,7 +93,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-
+# The Kafka connect container with the JDBC sink connector to write to Postgres from device_events_cleaned
   kafka-connect:
     image: confluentinc/cp-kafka-connect:7.4.3
     container_name: kafka-connect
@@ -120,6 +123,7 @@ services:
     volumes:
       - ./kafka-connect:/etc/kafka-connect/jars
 
+# A one-shot container to register the JDBC sink connector with Kafka Connect
   kafka-connect-init:
     container_name: kafka-connect-init
     image: curlimages/curl:latest
