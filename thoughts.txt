@@ -10,9 +10,6 @@ TODO:
 - Refactor everything as necessary
     - "Expect interfaces, return structs"
     - Sentinel errors
-- Reorg
-    - Kafka-Connect stuff in same directory
-    - Provided stuff in a separate directory
 - Mockery for mocks
 - Unit tests
 - Some kind of E2E test
