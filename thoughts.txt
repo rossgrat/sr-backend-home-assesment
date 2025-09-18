@@ -5,23 +5,29 @@ Provided Kafka and Zookeeper images do not work for ARM, using official Confluen
 To increase throughput, partition on device id
 
 TODO:
-- Environment variables
-- Extract worker code to be nice
-- REST API endpoints
-- Worker needs local cache with state and latest_seen
-- Postgres should use Timescale DB
-- Migrations to create hypertable
-    - Need go-migrate
-- Can we get rid of kafka metadata in the table?
-- Explain connector stuff in config and docker compose, cleanout unused stuff
-- Turn off auto-commit for Kafka
+- Convert DB to timescale
+- Implement go-migrate to create events table and set as HyperTable
+- REST API endpoint to post event
+- REST API endpoint to get timeline
+- Mockery for mocks
+- Unit tests
+- Environment variables and env file
+- Write readme explainer
+    - Changes to original files
+    - How to setup and run
+    - Screenshot of Architecture
+- Change compaction interval to be more often (max.compaction.lag.ms)
+- Move worker schema to a better spot
+- "Expect interfaces, return structs"
 
 
 
 Future steps
 - OTEL, logs, traces, metrics (especially throughput and response time percentiles)
-- Scale up Kafka partitions, it is hard to move data to a different partition
-
+- Scale up Kafka partitions, it is hard to move data to a different partition, can never downscale partitions
+- All Kafka handlers are susceptible to the poison pill problem, this needs fixing
+- waitForBrokers should be expanded to all workers, brokers may not be the same
+- Broker strings should be checked to work with multiple brokers
 
 Cameras track if a single device enters or exits.
 

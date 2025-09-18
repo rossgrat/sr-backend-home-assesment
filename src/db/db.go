@@ -36,7 +36,7 @@ func (db *DB) LoadLatestEventForDevice(ctx context.Context, deviceID string) (*D
 			device_id, 
 			event_type, 
 			timestamp 
-		FROM "device-events-cleaned"
+		FROM "device_events_cleaned"
 		WHERE device_id = $1 
 		ORDER BY timestamp DESC LIMIT 1`, deviceID)
 	if err != nil {

@@ -1,7 +1,7 @@
 services:
-  device-events-worker:
+  main:
     build: .
-    container_name: device-events-worker
+    container_name: main
     depends_on:
       - kafka
     environment:
@@ -51,13 +51,13 @@ services:
         --if-not-exists \
         --bootstrap-server kafka:29092 &&
       kafka-topics --create \
-        --topic device-events-cleaned \
+        --topic device_events_cleaned \
         --partitions 1 \
         --replication-factor 1 \
         --if-not-exists \
         --bootstrap-server kafka:29092 &&
       kafka-topics --create \
-        --topic device-events-cleaned-compacted \
+        --topic device_events_cleaned_compacted \
         --partitions 1 \
         --replication-factor 1 \
         --if-not-exists \
