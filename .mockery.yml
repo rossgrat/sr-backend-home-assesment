@@ -1,0 +1,10 @@
+dir: '{{.InterfaceDir}}'
+template: testify
+force-file-write: true
+filename: '{{.InterfaceName}}_mock.go'
+structname: 'Mock{{.InterfaceName}}'
+all: true
+packages:
+  sr-backend-home-assessment:
+    config:
+      recursive: true

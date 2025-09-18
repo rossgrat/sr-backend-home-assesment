@@ -2,10 +2,19 @@ package packer
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"sr-backend-home-assessment/internal/worker"
 
+	k "sr-backend-home-assessment/internal/kafka"
+
 	"github.com/segmentio/kafka-go"
+)
+
+var (
+	ErrReadMessage  = errors.New("error reading message")
+	ErrWriteMessage = errors.New("error writing message")
 )
 
 type Config struct {
@@ -17,8 +26,8 @@ type Config struct {
 
 type Packer struct {
 	worker *worker.Worker
-	reader *kafka.Reader
-	writer *kafka.Writer
+	reader k.Reader
+	writer k.Writer
 }
 
 func New(cfg Config) *Packer {
@@ -52,15 +61,16 @@ func (p *Packer) Close(ctx context.Context) {
 }
 
 // Auto-commit active
-func (p *Packer) ProcessMessage(ctx context.Context) {
+func (p *Packer) ProcessMessage(ctx context.Context) error {
+	const fn = "Packer:ProcessMessage"
 	m, err := p.reader.ReadMessage(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Error reading message", "error", err)
-		return
+		return fmt.Errorf("%s:%w:%w", fn, ErrReadMessage, err)
 	}
 	err = p.writer.WriteMessages(ctx, kafka.Message{Key: m.Key, Value: m.Value})
 	if err != nil {
-		slog.ErrorContext(ctx, "Error writing message", "error", err)
+		return fmt.Errorf("%s:%w:%w", fn, ErrWriteMessage, err)
 	}
 	slog.InfoContext(ctx, "Published packed message", "device_id", string(m.Key))
+	return nil
 }

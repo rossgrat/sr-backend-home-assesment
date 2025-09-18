@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sr-backend-home-assessment/internal/cache"
 	"sr-backend-home-assessment/internal/worker"
@@ -14,24 +15,32 @@ import (
 )
 
 var (
+	ErrReadMessage    = errors.New("error reading message")
+	ErrWriteMessage   = errors.New("error writing message")
+	ErrJSONParse      = errors.New("error parsing JSON")
 	ErrUnorderedEvent = errors.New("out of order event")
 	ErrDuplicateEvent = errors.New("duplicate event")
 	ErrInvalidEvent   = errors.New("invalid event")
 )
+
+type deviceCache interface {
+	Get(deviceID cache.DeviceID) (*cache.DeviceState, bool)
+	Set(deviceID cache.DeviceID, state *cache.DeviceState)
+}
 
 type Config struct {
 	Brokers         string
 	ConsumerGroupID string
 	ConsumerTopic   string
 	PublisherTopic  string
-	Cache           cache.Cache
+	Cache           deviceCache
 }
 
 type Cleaner struct {
 	worker *worker.Worker
-	reader *kafka.Reader
-	writer *kafka.Writer
-	cache  cache.Cache
+	reader k.Reader
+	writer k.Writer
+	cache  deviceCache
 }
 
 func New(cfg Config) *Cleaner {
@@ -66,16 +75,15 @@ func (c *Cleaner) Close(ctx context.Context) {
 }
 
 // Auto-commit active
-func (c *Cleaner) ProcessMessage(ctx context.Context) {
+func (c *Cleaner) ProcessMessage(ctx context.Context) error {
+	const fn = "Cleaner:ProcessMessage"
 	m, err := c.reader.ReadMessage(ctx)
 	if err != nil {
-		slog.ErrorContext(ctx, "Error reading message", "error", err)
-		return
+		return fmt.Errorf("%s:%w:%w", fn, ErrReadMessage, err)
 	}
 	var payload k.DeviceEvent
 	if err := json.Unmarshal(m.Value, &payload); err != nil {
-		slog.ErrorContext(ctx, "Error parsing JSON", "error", err)
-		return
+		return fmt.Errorf("%s:%w:%w", fn, ErrJSONParse, err)
 	}
 
 	if err := c.validateEvent(payload); err != nil {
@@ -85,7 +93,7 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 			"event_type", payload.EventType,
 			"timestamp", payload.Timestamp,
 		)
-		return
+		return nil
 	}
 
 	record := k.StructuredConnectRecord{
@@ -94,12 +102,11 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 	}
 	out, err := json.Marshal(record)
 	if err != nil {
-		slog.ErrorContext(ctx, "Error marshalling record", "error", err)
-		return
+		return fmt.Errorf("%s:%w:%w", fn, ErrJSONParse, err)
 	}
 	err = c.writer.WriteMessages(ctx, kafka.Message{Key: []byte(payload.DeviceID), Value: out})
 	if err != nil {
-		slog.ErrorContext(ctx, "Error writing cleaned message", "error", err)
+		return fmt.Errorf("%s:%w:%w", fn, ErrWriteMessage, err)
 	}
 
 	// Set cache only after successful write
@@ -108,6 +115,7 @@ func (c *Cleaner) ProcessMessage(ctx context.Context) {
 		LastTimestampSeen: payload.Timestamp,
 	})
 	slog.InfoContext(ctx, "Published cleaned message", "device_id", payload.DeviceID)
+	return nil
 }
 
 func (c *Cleaner) validateEvent(payload k.DeviceEvent) error {

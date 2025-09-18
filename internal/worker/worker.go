@@ -11,7 +11,7 @@ type Config struct {
 }
 
 type Processor interface {
-	ProcessMessage(ctx context.Context)
+	ProcessMessage(ctx context.Context) error
 }
 
 type Worker struct {
@@ -34,7 +34,10 @@ func (w *Worker) Run(ctx context.Context) {
 			slog.InfoContext(ctx, "Worker stopped...", "worker", w.name)
 			return
 		default:
-			w.processor.ProcessMessage(ctx)
+			err := w.processor.ProcessMessage(ctx)
+			if err != nil {
+				slog.ErrorContext(ctx, "Error processing message", "worker", w.name, "error", err)
+			}
 		}
 	}
 }

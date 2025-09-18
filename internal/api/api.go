@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sr-backend-home-assessment/internal/db"
@@ -9,12 +10,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+type repository interface {
+	CreateTimeline(context.Context, []db.DeviceEvent) error
+	LoadEventsBetween(context.Context, string, int64, int64) ([]db.DeviceEvent, error)
+}
+
 type API struct {
-	DB *db.DB
+	DB repository
 }
 
 type Config struct {
-	DB *db.DB
+	DB repository
 }
 
 func New(cfg Config) *API {

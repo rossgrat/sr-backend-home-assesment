@@ -1,5 +1,11 @@
 package worker
 
+import (
+	"context"
+
+	"github.com/segmentio/kafka-go"
+)
+
 const (
 	DeviceEnter  = "device_enter"
 	DeviceExit   = "device_exit"
@@ -32,6 +38,17 @@ type Schema struct {
 type Field struct {
 	Field string `json:"field"`
 	Type  string `json:"type"`
+}
+
+type Reader interface {
+	ReadMessage(ctx context.Context) (kafka.Message, error)
+	Close() error
+	Lag() int64
+}
+
+type Writer interface {
+	WriteMessages(ctx context.Context, msgs ...kafka.Message) error
+	Close() error
 }
 
 var StructuredSchema = Schema{

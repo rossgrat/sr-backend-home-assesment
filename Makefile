@@ -1,9 +1,12 @@
-.PHONY: run.up run.down logs.main connect-db logs.connect logs.connect-init client
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main
 
-run.up:
+up:
 	docker compose up -d --build
-run.down:
+down:
 	docker compose down -v --remove-orphans
+
+up.main:
+	docker compose up -d --build main
 
 logs.main:
 	docker compose logs -f main
@@ -13,10 +16,13 @@ logs.connect:
 	docker compose logs -f kafka-connect
 
 connect-db:
-	docker compose exec -it postgres psql -U postgres -d users
+	docker exec -it postgres psql -U kafkauser -d kafkadb
 
 client:
 	go run ./scripts/client/main.go
 
-send-data:
+data:
 	cd ./provided && ./events_producer.sh
+
+mocks:
+	mockery
