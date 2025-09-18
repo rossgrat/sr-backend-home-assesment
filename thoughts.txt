@@ -6,7 +6,6 @@ To increase throughput, partition on device id
 
 TODO:
 - Environment variables and env file
-- Makefile for everything
 - Refactor everything as necessary
     - "Expect interfaces, return structs"
     - Sentinel errors
@@ -26,6 +25,7 @@ Future steps
 - All Kafka handlers are susceptible to the poison pill problem, this needs fixing
 - waitForBrokers should be expanded to all workers, brokers may not be the same
 - Broker strings should be checked to work with multiple brokers
+- DB migrator needs to handle rollbacks
 
 Cameras track if a single device enters or exits.
 
