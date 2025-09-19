@@ -1,4 +1,4 @@
-.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks e2e test.cover
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks e2e test.cover lint
 
 up:
 	docker compose up -d --build
@@ -30,11 +30,16 @@ test:
 	go test -v -count=1 ./...
 test.concise:
 	go test -count=1 ./...
+
+# TODO: Exclude mock files from coverage report
 test.cover:
 	go test ./... -coverprofile=coverage.out &&  go tool cover -func=coverage.out
 
 e2e:
 	cd ./scripts/e2e && go run main.go
+
+lint:
+	golangci-lint run
 
 mac-install:
 	brew update
