@@ -49,7 +49,7 @@ The main application also contains a e2e test in `scripts/e2e`. This test writes
 ## Quick Callouts
 I wanted to make a quick callout that I changed up some of the provided source files.
 1. `docker-compose-kafka.yml` -> `docker-compose.yml`
-    - Removed the `wurstmeister` Zookeeper and Kafka images in favor of the official Confluent images. The `wurstmeister` images don't appear to have builds for ARM64, which is what I am using, so the project would not startup.
+    - Removed the `wurstmeister` Zookeeper and Kafka images in favor of the official Confluent images. The `wurstmeister` images don't appear to have builds for ARM64 (`docker compose inspect wurstmeister...` returns nothing), which is what I am using, so the project would not startup.
     - Added other dependencies, these will be described in the Dependencies section.
     - Moved the `device-events` Kafka topic instantiation to a one-shot `kafka-init-topics` container.
 2. `data-producer.py` -> `provided/data-producer.py`
