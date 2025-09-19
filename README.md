@@ -25,7 +25,7 @@ The dependencies are as follows:
     - The REST API implements the `POST /timeline` and `GET /timeline/{device_id}` endpoints. `POST /timeline` accepts any event for any device ID with the timestamp in RFC3339 format (this is converted to Unix Epoch Milliseconds before storing to the database). `GET /timeline/{device_id}?start=start_timestamp&end=end_timestamp` will return all of the events for a device ID between the provided start and end timestamp.
     - The database layer is responsible for storing and querying data in the TimescaleDB database. Migrations are run automatically when the database pool is initialized via `go-migrate`. At present there is only one migration to create the `device_events_cleaned` table and convert it to a time-series optimized Hypertable.
 - TimescaleDB (Postgres) - TimescaleDB is a Postgres plugin that is optimized for time-series data. There is one Hypertable (a table partitioned by timestamp) called `device_events_cleaned`.
-    - An efficient time-series database is not necessary for this small toy project, and database would do fine, but at scale, a dedicated time-series DB is necessary.
+    - An efficient time-series database is not necessary for this small toy project, any database would do fine, but at scale, a dedicated time-series DB is necessary.
 - Kafka - The Kafka container and its associated containers.
     - The Kafka container has three topics:
         - `device-events` - Provided
