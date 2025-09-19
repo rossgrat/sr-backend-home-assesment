@@ -2,7 +2,7 @@
 
 ## Overview
 
-In this assessment, you will build a stream processing pipeline for Ubiety devices that:
+In this assessment, you will build a stream processing pipeline for devices that:
 - **Consumes** device events from a Kafka topic named `device-events`
 - **Validates** event transitions (enter/exit) for each device
 - **Stores** valid events in a timeline service

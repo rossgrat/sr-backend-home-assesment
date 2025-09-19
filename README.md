@@ -1,5 +1,5 @@
-# Ubiety Senior Backend Home Assessment
-Hi Ubiety team, thanks so much for considering me for this role! This repo is the solution source code for the provided project spec.
+# Senior Backend Home Assessment
+Hi team, thanks so much for considering me for this role! This repo is the solution source code for the provided project spec.
 
 ## Running Locally
 ### Requirements
