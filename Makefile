@@ -1,4 +1,4 @@
-.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks e2e
+.PHONY: up down logs.main connect-db logs.connect logs.connect-init client data up.main mac-install test test.concise mocks e2e test.cover
 
 up:
 	docker compose up -d --build
@@ -28,9 +28,10 @@ mocks:
 
 test:
 	go test -v -count=1 ./...
-
 test.concise:
 	go test -count=1 ./...
+test.cover:
+	go test ./... -coverprofile=coverage.out &&  go tool cover -func=coverage.out
 
 e2e:
 	cd ./scripts/e2e && go run main.go

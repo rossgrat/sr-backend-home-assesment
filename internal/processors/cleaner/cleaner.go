@@ -18,7 +18,6 @@ var (
 	ErrReadMessage    = errors.New("error reading message")
 	ErrWriteMessage   = errors.New("error writing message")
 	ErrJSONParse      = errors.New("error parsing JSON")
-	ErrUnorderedEvent = errors.New("out of order event")
 	ErrDuplicateEvent = errors.New("duplicate event")
 	ErrInvalidEvent   = errors.New("invalid event")
 )
@@ -124,9 +123,6 @@ func (c *Cleaner) validateEvent(payload k.DeviceEvent) error {
 	}
 	state, exists := c.cache.Get(payload.DeviceID)
 	if exists {
-		if payload.Timestamp < state.LastTimestampSeen {
-			return ErrUnorderedEvent
-		}
 		if payload.EventType == state.LastEvent {
 			return ErrDuplicateEvent
 		}

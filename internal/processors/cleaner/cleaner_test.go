@@ -232,23 +232,6 @@ func Test_validateEvent(t *testing.T) {
 			expectedErr: ErrInvalidEvent,
 		},
 		{
-			name: "unordered event",
-			inputEvent: k.DeviceEvent{
-				DeviceID:  "device123",
-				EventType: "device_enter",
-				Timestamp: 0,
-			},
-			setupCache: func(deviceID string) deviceCache {
-				c := NewMockdeviceCache(t)
-				c.EXPECT().Get(deviceID).Return(cache.DeviceState{
-					LastEvent:         "device_exit",
-					LastTimestampSeen: 1,
-				}, true)
-				return c
-			},
-			expectedErr: ErrUnorderedEvent,
-		},
-		{
 			name: "duplicate event",
 			inputEvent: k.DeviceEvent{
 				DeviceID:  "device123",
