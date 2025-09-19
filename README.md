@@ -19,21 +19,22 @@ To get us started, here is an overview of how this system is structured.
 
 The dependencies are as follows:
 - Main Application - This is where the two workers (Cleaner and Packer), as well as the REST API live. The three services live in separate worker groups in a single Go application. 
-    - The Cleaner is in charge of moving messages from the `device-events` Kafka topic to the `device_events_cleaned` Kafka topic. When the Cleaner consumes an event from `device-events`, it validates the event against the requirements in the project spec (no duplicates, `device_exit` and `device_enter` only). Events that fail validation are discarded. The Cleaner also attaches schema to the new messages in `device_events_cleaned`. This is necessary for Kafka Connect to work properly
+    - The Cleaner is in charge of moving messages from the `device-events` Kafka topic to the `device_events_cleaned` Kafka topic. When the Cleaner consumes an event from `device-events`, it validates the event against the requirements in the project spec (no duplicates, `device_exit` and `device_enter` only). Events that fail validation are discarded. The Cleaner also attaches schema to the new messages in `device_events_cleaned`. This is necessary for Kafka Connect to work properly.
     - The Packer is in charge of moving messages from `device_events_cleaned` to `device_events_cleaned_compacted`, which is a compacted topic that only keeps the latest events for each device ID.
-    - The Cache is used in the Cleaner and stores the last event seen and last timestamp seen for each device ID. The Cache is a simple local cache that is not thread safe. When the Main Application starts up, the Cache consumes all events from the `device_events_cleaned_compacted` topic and stores them in a map of Device ID -> Latest State. This ensures that if the Main Application goes down, it will not ingest incorrect events when it starts back up due to lack of valid device state. Once the cache is hydrated, the Cleaner instance that contains the cache is responsible for keeping it updated.
+    - The Cache is used in the Cleaner and stores the last event seen and last timestamp seen (presently unused) for each device ID. The Cache is a simple local cache that is not thread safe. When the Main Application starts up, the Cache consumes all events from the `device_events_cleaned_compacted` topic and stores them in a map of Device ID -> Latest State. This ensures that if the Main Application goes down, it will not ingest incorrect events when it starts back up due to lack of valid device state. Once the cache is hydrated, the Cleaner instance that contains the cache is responsible for keeping it updated.
     - The REST API implements the `POST /timeline` and `GET /timeline/{device_id}` endpoints. `POST /timeline` accepts any event for any device ID with the timestamp in RFC3339 format (this is converted to Unix Epoch Milliseconds before storing to the database). `GET /timeline/{device_id}?start=start_timestamp&end=end_timestamp` will return all of the events for a device ID between the provided start and end timestamp.
-    - The database layer is responsible
+    - The database layer is responsible for storing and querying data in the TimescaleDB database. Migrations are run automatically when the database pool is initialized via `go-migrate`. At present there is only one migration to create the `device_events_cleaned` table and convert it to a time-series optimized Hypertable.
 - TimescaleDB (Postgres) - TimescaleDB is a Postgres plugin that is optimized for time-series data. There is one Hypertable (a table partitioned by timestamp) called `device_events_cleaned`.
-    - An efficient time-series database is not necessary for this small toy project, and database would do fine, but at scale, a dedicated time-series DB is necessary
-- Kafka - The Kafka container contains three topics:
-    - `device-events` - Provided
-    - `device_events_cleaned` - Events that adhere to the spec requirements, with schema attached
-    - `device_events_cleaned_compacted` - Identical to `device_events_cleaned` but with a compaction cleanup policy
+    - An efficient time-series database is not necessary for this small toy project, and database would do fine, but at scale, a dedicated time-series DB is necessary.
+- Kafka - The Kafka container and its associated containers.
+    - The Kafka container has three topics:
+        - `device-events` - Provided
+        - `device_events_cleaned` - Events that adhere to the spec requirements, with schema attached
+        - `device_events_cleaned_compacted` - Identical to `device_events_cleaned` but with a compaction cleanup policy
     - The `kafka-ui` container provides a UI for Kafka topics and messages at `localhost:10015`
     - The `kafka-init-topics` one-shot container creates all topics once the `kafka` container is ready
     - Kafka is running with one broker, one partition and one replica per partition. In a real system, we would need metrics to monitor throughput of these topics and scale up all as necessary.
-- Kafka Connect - Kafka Connect is an out-of-the-box DB connector in charge of moving data from `device_events_cleaned` to TimescaleDB (Postgres)
+- Kafka Connect - Kafka Connect is an out-of-the-box DB connector in charge of moving data from `device_events_cleaned` to TimescaleDB
     - `.jar` files and configuration for the Postgres Kafka Connector can be found in the `kafka-connect` directory
     - The `kafka-connect-init` is a one-shot docker compose container responsible for loading the config into the connector
 
@@ -84,3 +85,4 @@ I wanted to make a quick callout that I changed up some of the provided source f
 - Handle unreliable clocks
 - Sending config to the Kafka connector with `curl` is cumbersome, can we get rid of the one-shot and load it automatically?
 - e2e test should be much better, cleaner, easier to change and expand
+- How can we build a complete timeline if events are not delivered in-order?

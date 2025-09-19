@@ -9,6 +9,7 @@ import (
 
 var DBPool *DB
 
+// Setup the testcontainer DB before running an dbOps tests
 func TestMain(m *testing.M) {
 	ctx := context.Background()
 

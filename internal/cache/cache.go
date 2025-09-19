@@ -69,6 +69,8 @@ func (c *StateCache) Dump() {
 	}
 }
 
+// waitForBroker pings the broker until it is reachable or maxWait is exceeded. This is necessary
+// because the Kafka container may not be ready when the main application is ready
 func (c *StateCache) waitForBroker(ctx context.Context, maxWait time.Duration, interval time.Duration) error {
 	const fn = "StateCache:waitForBroker"
 	deadline := time.Now().Add(maxWait)
@@ -87,6 +89,7 @@ func (c *StateCache) waitForBroker(ctx context.Context, maxWait time.Duration, i
 	return fmt.Errorf("%s:%w", fn, ErrBrokerUnreachable)
 }
 
+// Hydrate reads all messages from the compacted Kafka topic and populates the cache.
 // Blocking operation
 func (c *StateCache) Hydrate(ctx context.Context) error {
 	const fn = "StateCache:Hydrate"
@@ -117,6 +120,10 @@ func (c *StateCache) Hydrate(ctx context.Context) error {
 	}
 }
 
+// ReadMessage will attempt to read a message from Kafka and update the cache.
+// ReadMessage will end if it times out reading a message (in the case that there are no
+// messages to read in the topic initially), or if the lag is zero. The reader can
+// only measure the lag if it successfully reads a message
 func (c *StateCache) ReadMessage(ctx context.Context) (bool, error) {
 	const fn = "StateCache:ReadMessage"
 	readMessageTimeoutCtx, cancel := context.WithTimeout(ctx, time.Second*5)

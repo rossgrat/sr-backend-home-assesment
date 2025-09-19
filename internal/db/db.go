@@ -51,8 +51,8 @@ func Init(ctx context.Context, cfg Config) (*DB, error) {
 	const fn = "Init"
 	var pool *pgxpool.Pool
 	var err error
-	maxWait := 15 * time.Second // total time to retry
-	interval := 1 * time.Second // wait between retries
+	maxWait := 15 * time.Second
+	interval := 1 * time.Second
 	deadline := time.Now().Add(maxWait)
 	for {
 		pool, err = pgxpool.Connect(ctx, cfg.ConnString)
